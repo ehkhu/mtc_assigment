@@ -26,7 +26,7 @@ npm run dev:client
 
 Open http://localhost:5173
 
-`setup` creates `server/prisma/dev.db` and loads the demo clinic. Running it again wipes that file back to the demo data.
+`setup` creates `server/.env` from `server/.env.example` when that file is missing, then creates `server/prisma/dev.db` and loads the demo clinic. Running it again wipes that database back to the demo data and leaves an existing `.env` alone.
 
 ### Demo accounts
 

@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "setup": "npm run db:setup -w server",
+    "setup": "node server/scripts/setup.mjs",
     "dev:server": "npm run dev -w server",
     "dev:client": "npm run dev -w client",
     "test": "npm test -w server",
