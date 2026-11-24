@@ -1,0 +1,67 @@
+// SQLite keeps the project runnable with no database server to install.
+// Table and column names match the brief. A users table is added because
+// login and roles need a place to live; the brief did not specify one.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+}
+
+/// Clinic staff. `password_hash` is a bcrypt hash, never the password itself.
+model User {
+  id           String          @id @default(cuid())
+  email        String          @unique
+  name         String
+  passwordHash String          @map("password_hash")
+  role         Role
+  records      MedicalRecord[]
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+/// One row per person receiving care.
+model Patient {
+  id          String          @id @default(cuid())
+  name        String
+  dateOfBirth String          @map("date_of_birth")
+  records     MedicalRecord[]
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  // Supports exact and prefix lookups. The live search uses `contains`,
+  // which is a LIKE scan — fine for a clinic patient list, not the hot path.
+  @@index([name])
+  @@map("patients")
+}
+
+/// Owned by the doctor who wrote it (`doctor_id`).
+/// That ownership is the assignment rule: a doctor may read a record
+/// only when doctor_id is their user id. Admins are not filtered.
+model MedicalRecord {
+  id        String   @id @default(cuid())
+  patientId String   @map("patient_id")
+  doctorId  String   @map("doctor_id")
+  diagnosis String
+  treatment String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  User    @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  // Admin read:    filter patient_id, order by created_at.
+  // Doctor read:   filter patient_id + doctor_id, order by created_at.
+  // Doctor's list: find patients that have any row with this doctor_id.
+  @@index([patientId, createdAt])
+  @@index([patientId, doctorId, createdAt])
+  @@index([doctorId])
+  @@map("medical_records")
+}
